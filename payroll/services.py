@@ -30,7 +30,7 @@ from payroll.strategies import StrategyOfPaymentInterface
 from calculation.services import get_calculation_object
 from core.services.utils import output_exception, check_authentication
 from contribution_plan.models import PaymentPlan
-from social_protection.models import Beneficiary, BeneficiaryStatus
+from social_protection.models import Beneficiary, BeneficiaryStatus, GroupBeneficiary, BenefitPlan
 from tasks_management.apps import TasksManagementConfig
 from tasks_management.models import Task
 from tasks_management.services import TaskService, _get_std_task_data_payload
@@ -187,7 +187,11 @@ class PayrollService(BaseService):
             for criterion in json_ext.get("advanced_criteria", [])
         ] if json_ext else []
 
-        beneficiaries_queryset = Beneficiary.objects.filter(
+        base_beneficiary_queryset = Beneficiary.objects.all()
+        if payment_plan.benefit_plan.type == BenefitPlan.BenefitPlanType.GROUP_TYPE:
+            base_beneficiary_queryset = GroupBeneficiary.objects.all()
+
+        beneficiaries_queryset = base_beneficiary_queryset.filter(
             benefit_plan__id=payment_plan.benefit_plan.id,
             status=BeneficiaryStatus.ACTIVE,
             is_deleted=False,
